@@ -16,7 +16,9 @@ import ("github.com/astaxie/beego"
 	"API-SERVER/pkgs"
 
 
-	"strings"
+	//"strings"
+	"bytes"
+	
 )
 
 
@@ -196,7 +198,10 @@ func (app *Appcontroller)Appstart(){
 
 	AppBuild.App = *App_data
 	AppBuild.Build = *Build_data
-        s:= fmt.Sprintf("%+v", *AppBuild)
+        //s:= fmt.Sprintf("%+v", *AppBuild)
+	buf := new(bytes.Buffer)
+
+	json.NewEncoder(buf).Encode(AppBuild)
 
 
 
@@ -204,7 +209,8 @@ func (app *Appcontroller)Appstart(){
 	var cliententry client.Comm
 	cliententry.Method = "POST"
 	cliententry.Url = beego.AppConfig.String("buildcontroller")
-	cliententry.Body = strings.NewReader(s)
+	//cliententry.Body = strings.NewReader(s)
+	cliententry.Body = buf
 
 	res,err := cliententry.Conn(&cliententry)
 	fmt.Println(res,err)
@@ -218,7 +224,7 @@ func (app *Appcontroller)Appstart(){
 
 	}
 
-	app.Data["json"] = s
+	app.Data["json"] = res
 	app.ServeJSON()
 
 
@@ -233,7 +239,12 @@ func (app *Appcontroller)Stage(){
        var App_stage model.AppBuild
 	json.Unmarshal(app.Ctx.Input.RequestBody,&App_stage)
 
-	app.Data["json"]= &App_stage
+
+
+
+
+
+	app.Data["json"]=App_stage
 	app.ServeJSON()
 
 
