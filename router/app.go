@@ -14,4 +14,6 @@ func init(){
 	beego.Router("v2/apps/:appguid/start", &controller.Appcontroller{} , "Post:Appstart")
 
 	beego.Router("v2/apps/stage", &controller.Appcontroller{} , "Post:Stage")
+
+	beego.Router("v2/apps", &controller.Appcontroller{} , "Get:GetAll")
 }

@@ -3,7 +3,7 @@ package controller
 import ("github.com/astaxie/beego"
          "API-SERVER/model"
 	"encoding/json"
-	"github.com/kubernetes/client-go/pkg/util/rand"
+
 
 	"fmt"
 	"os"
@@ -13,12 +13,14 @@ import ("github.com/astaxie/beego"
 
 
 
-	"API-SERVER/pkgs"
+	"API-SERVER/pkgs/client"
 
 
-	//"strings"
+
+
 	"bytes"
-	
+	"github.com/kubernetes/client-go/pkg/util/rand"
+	"API-SERVER/pkgs/kubeclient"
 )
 
 
@@ -173,6 +175,7 @@ func (app *Appcontroller) Uploadbits() {
 
 
 
+
 func (app *Appcontroller)Appstart(){
 
 	App_start := new(model.App)
@@ -199,21 +202,25 @@ func (app *Appcontroller)Appstart(){
 	AppBuild.App = *App_data
 	AppBuild.Build = *Build_data
         //s:= fmt.Sprintf("%+v", *AppBuild)
-	buf := new(bytes.Buffer)
-
-	json.NewEncoder(buf).Encode(AppBuild)
-
 
 
 
 	var cliententry client.Comm
 	cliententry.Method = "POST"
 	cliententry.Url = beego.AppConfig.String("buildcontroller")
-	//cliententry.Body = strings.NewReader(s)
+
+
+	buf := new(bytes.Buffer)
+        json.NewEncoder(buf).Encode(AppBuild)
 	cliententry.Body = buf
 
 	res,err := cliententry.Conn(&cliententry)
-	fmt.Println(res,err)
+	Ap_d := new(model.App)
+	json.Unmarshal(res,&Ap_d)
+
+	Ap_d.Appupdate(Ap_d)
+
+
 
 	if err!=nil {
 		beego.Info(err)
@@ -221,30 +228,45 @@ func (app *Appcontroller)Appstart(){
 		app.Data["json"] = err.Error()
 		app.ServeJSON()
 		return
-
 	}
 
-	app.Data["json"] = res
+	app.Data["json"] = Ap_d
 	app.ServeJSON()
-
-
-
-
 
 
 }
 
 func (app *Appcontroller)Stage(){
 
-       var App_stage model.AppBuild
+	App_stage := new(model.AppBuild)
 	json.Unmarshal(app.Ctx.Input.RequestBody,&App_stage)
+	App_stage.Buildid = rand.String(22)
+	Kubernetes_endpoint := beego.AppConfig.String("kube_master")
+	kubenewclient := new(kubeclient.Namespace)
+
+	err:=kubenewclient.CreateNamespace(Kubernetes_endpoint)
+	if err!=nil{
+		fmt.Println(err)
+		app.Data["json"]= err
+
+	}
+	app.Data["json"]= App_stage
+
+
+	app.ServeJSON()
 
 
 
+}
 
+func (app *Appcontroller)GetAll() {
 
+	App_all := new(model.App)
 
-	app.Data["json"]=App_stage
+	data,_ := App_all.Findall()
+
+	app.Data["json"] = data
+
 	app.ServeJSON()
 
 
